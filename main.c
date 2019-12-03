@@ -17,11 +17,14 @@
 #include "stm32f0xx_ll_rtc.h"
 #include "hex2num.h"
 
+#define BUTT_MODE_SWITCH_START 0
+#define BUTT_MODE_SWITCH_TRIGG 300
+#define BUTT_MODE_SWITCH_COMPLETE 301
 
+unsigned int numi = 1234;
+int8_t shc = 0;
 
-static unsigned int numi = 1234;
-static int8_t shc = 0;
-
+int modeSwitchButtonTime = BUTT_MODE_SWITCH_COMPLETE;
 
 
 static const unsigned int pow10[] = {1, 10, 100, 1000};
@@ -34,6 +37,9 @@ void gpio_config() {
     LL_AHB1_GRP1_EnableClock(LL_AHB1_GRP1_PERIPH_GPIOC);
     LL_GPIO_SetPinMode(GPIOC, LL_GPIO_PIN_8, LL_GPIO_MODE_OUTPUT);
     LL_GPIO_SetPinMode(GPIOC, LL_GPIO_PIN_9, LL_GPIO_MODE_OUTPUT);
+
+    LL_GPIO_SetPinMode(GPIOA, LL_GPIO_PIN_1, LL_GPIO_MODE_INPUT);
+    LL_GPIO_SetPinPull(GPIOA, LL_GPIO_PIN_1, LL_GPIO_PULL_DOWN);
 
 }
 
@@ -74,10 +80,33 @@ static void systick_config() {
 }
 
 void SysTick_Handler() {
+    static int mode = 0;
+    static unsigned int stime = 0;
     if(LL_RTC_IsActiveFlag_RS(RTC)) {
-        numi = hex2num(__LL_RTC_GET_HOUR(LL_RTC_TIME_Get(RTC))) * 100 + hex2num(__LL_RTC_GET_MINUTE(LL_RTC_TIME_Get(RTC)));
+        if(!mode)
+            numi = hex2num(__LL_RTC_GET_HOUR(LL_RTC_TIME_Get(RTC))) * 100 + hex2num(__LL_RTC_GET_MINUTE(LL_RTC_TIME_Get(RTC)));
+        else {
+            unsigned int ctime = hex2num(__LL_RTC_GET_SECOND(LL_RTC_TIME_Get(RTC))) + hex2num(__LL_RTC_GET_MINUTE(LL_RTC_TIME_Get(RTC))) * 60;
+            unsigned int time = stime - ctime;
+            numi = (time / 60 ) * 100 + (time % 60);
+        }
 
+    }
 
+    switch (modeSwitchButtonTime) {
+        default:
+            modeSwitchButtonTime++;
+            break;
+        case BUTT_MODE_SWITCH_TRIGG:
+            modeSwitchButtonTime++;
+            mode ^= 1;
+            if(mode) {
+                stime = hex2num(__LL_RTC_GET_SECOND(LL_RTC_TIME_Get(RTC))) + hex2num(__LL_RTC_GET_MINUTE(LL_RTC_TIME_Get(RTC))) * 60 + 60*40;
+            }
+            LL_GPIO_TogglePin(GPIOC, LL_GPIO_PIN_8);
+            break;
+        case BUTT_MODE_SWITCH_COMPLETE:
+            break;
     }
 
 	if((++shc) == 4)
@@ -119,10 +148,29 @@ static void rtc_config(void)
 
 }
 
+void exti_config() {
+    LL_APB1_GRP2_EnableClock(LL_APB1_GRP2_PERIPH_SYSCFG);
+
+    LL_SYSCFG_SetEXTISource(LL_SYSCFG_EXTI_PORTA, LL_SYSCFG_EXTI_LINE1);
+    LL_EXTI_EnableIT_0_31(LL_EXTI_LINE_1);
+
+    LL_EXTI_EnableRisingTrig_0_31(LL_EXTI_LINE_1);
+    NVIC_EnableIRQ(EXTI0_1_IRQn);
+    NVIC_SetPriority(EXTI0_1_IRQn, 1);
+}
+
+void EXTI0_1_IRQHandler() {
+    modeSwitchButtonTime = BUTT_MODE_SWITCH_START;
+    LL_GPIO_TogglePin(GPIOC, LL_GPIO_PIN_8);
+
+    LL_EXTI_ClearFlag_0_31(LL_EXTI_LINE_1);
+}
+
 int main(void)
 {
 	rcc_config();
 	gpio_config();
+	exti_config();
 	
 	systick_config();
 	rtc_config();
