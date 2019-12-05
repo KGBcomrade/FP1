@@ -17,3 +17,13 @@ unsigned int hex2num(unsigned int inp) {
     }
     return res;
 }
+
+unsigned int num2hex(unsigned int inp) {
+    int res = 0, sh = 1;
+    while(inp != 0) {
+        res += (inp % 10) * sh;
+        sh *= 0x10;
+        inp /= 10;
+    }
+    return res;
+}

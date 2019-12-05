@@ -32,13 +32,13 @@ void gpio_ind7_config() {
 
 
 
-void set_indicator(unsigned int num, uint8_t sh) {
+void set_indicator(unsigned int num, uint8_t sh, int dot) {
 
 
-    static int32_t mask = LL_GPIO_PIN_0 | LL_GPIO_PIN_1 | LL_GPIO_PIN_2 | LL_GPIO_PIN_3 \
+    static const int32_t mask = LL_GPIO_PIN_0 | LL_GPIO_PIN_1 | LL_GPIO_PIN_2 | LL_GPIO_PIN_3 \
     			| LL_GPIO_PIN_4 | LL_GPIO_PIN_5 |  LL_GPIO_PIN_6 | LL_GPIO_PIN_7;
 
-    static int32_t shmask = LL_GPIO_PIN_0 | LL_GPIO_PIN_1 | LL_GPIO_PIN_2 | LL_GPIO_PIN_3;
+    static const int32_t shmask = LL_GPIO_PIN_0 | LL_GPIO_PIN_1 | LL_GPIO_PIN_2 | LL_GPIO_PIN_3;
 
 
     static const uint32_t decoder[] = {
@@ -70,7 +70,7 @@ void set_indicator(unsigned int num, uint8_t sh) {
     uint32_t port_state = LL_GPIO_ReadOutputPort(GPIOB);
 
     port_state = (port_state & ~mask) | decoder[(num & 0xF) % (sizeof(decoder) / sizeof(uint32_t))];
-    if(num & 16)
+    if(dot)
     	port_state |= LL_GPIO_PIN_7;
     LL_GPIO_WriteOutputPort(GPIOB, port_state);
 
