@@ -34,6 +34,8 @@ unsigned int worktime = 15, breaktime = 10;
 
 unsigned int stime = 0;
 
+unsigned int done = 0;
+
 
 
 
@@ -81,20 +83,17 @@ static void systick_config() {
 
 	LL_SYSTICK_EnableIT();
 
-	NVIC_SetPriority(SysTick_IRQn, 0);
+	NVIC_SetPriority(SysTick_IRQn, 3);
 }
 
 void SysTick_Handler() {
-    static int mode = 0;
+    static unsigned int ctime, time, t;
+    static unsigned int timode = 0; //0 for work mode, 1 for break mode
     if(LL_RTC_IsActiveFlag_RS(RTC)) {
-        if(!mode)
-            numi = hex2num(__LL_RTC_GET_HOUR(LL_RTC_TIME_Get(RTC))) * 100 + hex2num(__LL_RTC_GET_MINUTE(LL_RTC_TIME_Get(RTC)));
-        else {
-            unsigned int ctime = hex2num(__LL_RTC_GET_SECOND(LL_RTC_TIME_Get(RTC))) + hex2num(__LL_RTC_GET_MINUTE(LL_RTC_TIME_Get(RTC))) * 60;
-            unsigned int time = stime - ctime;
-            numi = (time / 60 ) * 100 + (time % 60);
-        }
-
+        ctime = hex2num(__LL_RTC_GET_SECOND(LL_RTC_TIME_Get(RTC))) +
+               hex2num(__LL_RTC_GET_MINUTE(LL_RTC_TIME_Get(RTC))) * 60;
+        time = done ? ctime - stime : stime - ctime;
+        numi = (time / 60 ) * 100 + (time % 60);
     }
 
     switch (modeSwitchButtonTime) {
@@ -103,19 +102,24 @@ void SysTick_Handler() {
             break;
         case BUTT_MODE_SWITCH_TRIGG:
             modeSwitchButtonTime++;
-            mode ^= 1;
-            if(mode) {
-                stime = hex2num(__LL_RTC_GET_SECOND(LL_RTC_TIME_Get(RTC))) + hex2num(__LL_RTC_GET_MINUTE(LL_RTC_TIME_Get(RTC))) * 60 + worktime;
-                //Set up alarm
+            if(done || timode) {
+                done = 0;
+
+                timode ^= 1;
+                stime = hex2num(__LL_RTC_GET_SECOND(LL_RTC_TIME_Get(RTC))) + hex2num(__LL_RTC_GET_MINUTE(LL_RTC_TIME_Get(RTC))) * 60 + (timode ? breaktime : worktime);
+
+                LL_GPIO_TogglePin(GPIOC, LL_GPIO_PIN_8);
+
                 LL_RTC_DisableWriteProtection(RTC);
-                unsigned int t = hex2num(__LL_RTC_GET_SECOND(LL_RTC_TIME_Get(RTC))) + hex2num(__LL_RTC_GET_MINUTE(LL_RTC_TIME_Get(RTC))) * 60 + hex2num(__LL_RTC_GET_HOUR(LL_RTC_TIME_Get(RTC))) * 3600 + worktime;
+                LL_RTC_ALMA_Disable(RTC);
+                while(!LL_RTC_IsActiveFlag_ALRAW(RTC));
+                t = hex2num(__LL_RTC_GET_SECOND(LL_RTC_TIME_Get(RTC))) +
+                    hex2num(__LL_RTC_GET_MINUTE(LL_RTC_TIME_Get(RTC))) * 60 +
+                    hex2num(__LL_RTC_GET_HOUR(LL_RTC_TIME_Get(RTC))) * 3600 + (timode ? breaktime : worktime);
                 LL_RTC_ALMA_ConfigTime(RTC, LL_RTC_ALMA_TIME_FORMAT_AM, num2hex(t / 3600), num2hex((t % 3600) / 60), num2hex(t % 60));
                 LL_RTC_ALMA_Enable(RTC);
                 LL_RTC_EnableWriteProtection(RTC);
-            } else
-                //TODO podoomat mb mozhno loochshe
-                LL_RTC_ALMA_Disable(RTC);
-            LL_GPIO_TogglePin(GPIOC, LL_GPIO_PIN_8);
+            }
             break;
         case BUTT_MODE_SWITCH_COMPLETE:
             break;
@@ -151,7 +155,7 @@ static void rtc_config(void)
     LL_RTC_SetHourFormat(RTC, LL_RTC_HOURFORMAT_24HOUR);
     LL_RTC_DATE_Config(RTC, LL_RTC_WEEKDAY_FRIDAY, 1,
                        LL_RTC_MONTH_MARCH, 2019);
-    LL_RTC_TIME_Config(RTC, LL_RTC_TIME_FORMAT_AM_OR_24, 0x19, 0x58, 00);
+    LL_RTC_TIME_Config(RTC, LL_RTC_TIME_FORMAT_AM_OR_24, 0x00, 0x00, 00);
 
     LL_RTC_DisableInitMode(RTC);
     LL_RTC_EnableWriteProtection(RTC);
@@ -163,14 +167,18 @@ static void rtc_config(void)
     LL_RTC_DisableWriteProtection(RTC);
     LL_RTC_ALMA_Disable(RTC);
     while(!LL_RTC_IsActiveFlag_ALRAW(RTC));
+    //Set up alarm
+    unsigned int t = worktime;
     LL_RTC_ALMA_SetMask(RTC, LL_RTC_ALMA_MASK_DATEWEEKDAY);
+    LL_RTC_ALMA_ConfigTime(RTC, LL_RTC_ALMA_TIME_FORMAT_AM, num2hex(t / 3600), num2hex((t % 3600) / 60), num2hex(t % 60));
+    LL_RTC_ALMA_Enable(RTC);
+
     LL_RTC_EnableIT_ALRA(RTC);
     LL_RTC_EnableWriteProtection(RTC);
 
     NVIC_EnableIRQ(RTC_IRQn);
     NVIC_SetPriority(RTC_IRQn, 2);
     LL_RTC_ALMA_ConfigTime(RTC, LL_RTC_ALMA_TIME_FORMAT_AM, 0x19, 0x58, 0x10);
-    LL_RTC_ALMA_Enable(RTC);
     LL_EXTI_EnableIT_0_31(LL_EXTI_LINE_17);
     LL_EXTI_EnableRisingTrig_0_31(LL_EXTI_LINE_17);
     LL_EXTI_EnableFallingTrig_0_31(LL_EXTI_LINE_17);
@@ -190,28 +198,20 @@ void exti_config() {
 
 void EXTI0_1_IRQHandler() {
     modeSwitchButtonTime = BUTT_MODE_SWITCH_START;
-    LL_GPIO_TogglePin(GPIOC, LL_GPIO_PIN_8);
 
     LL_EXTI_ClearFlag_0_31(LL_EXTI_LINE_1);
 }
 
 void RTC_IRQHandler() {
-    static int timode = 0; //0 for work mode, 1 for break mode
 
     LL_GPIO_TogglePin(GPIOC, LL_GPIO_PIN_9);
 
-    timode ^= 1;
 
     //TODO change
-    stime = hex2num(__LL_RTC_GET_SECOND(LL_RTC_TIME_Get(RTC))) + hex2num(__LL_RTC_GET_MINUTE(LL_RTC_TIME_Get(RTC))) * 60 + (timode ? breaktime : worktime);
 
-    LL_RTC_DisableWriteProtection(RTC);
-    LL_RTC_ALMA_Disable(RTC);
-    while(!LL_RTC_IsActiveFlag_ALRAW(RTC));
-    unsigned int t = hex2num(__LL_RTC_GET_SECOND(LL_RTC_TIME_Get(RTC))) + hex2num(__LL_RTC_GET_MINUTE(LL_RTC_TIME_Get(RTC))) * 60 + hex2num(__LL_RTC_GET_HOUR(LL_RTC_TIME_Get(RTC))) * 3600 + (timode ? breaktime : worktime);
-    LL_RTC_ALMA_ConfigTime(RTC, LL_RTC_ALMA_TIME_FORMAT_AM, num2hex(t / 3600), num2hex((t % 3600) / 60), num2hex(t % 60));
-    LL_RTC_ALMA_Enable(RTC);
-    LL_RTC_EnableWriteProtection(RTC);
+    done = 1;
+
+
     LL_RTC_ClearFlag_ALRA(RTC);
     LL_EXTI_ClearFlag_0_31(LL_EXTI_LINE_17);
 }
@@ -224,8 +224,9 @@ int main(void)
 	
 	systick_config();
 	rtc_config();
+    stime = worktime;
 
-	LL_GPIO_SetOutputPin(GPIOC, LL_GPIO_PIN_8);
+    LL_GPIO_ResetOutputPin(GPIOC, LL_GPIO_PIN_8);
 
 	while(1);
 

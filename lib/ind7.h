@@ -67,6 +67,8 @@ void set_indicator(unsigned int num, uint8_t sh, int dot) {
     	LL_GPIO_PIN_0, LL_GPIO_PIN_1, LL_GPIO_PIN_2, LL_GPIO_PIN_3
     };
 
+
+
     uint32_t port_state = LL_GPIO_ReadOutputPort(GPIOB);
 
     port_state = (port_state & ~mask) | decoder[(num & 0xF) % (sizeof(decoder) / sizeof(uint32_t))];
