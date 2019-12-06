@@ -17,14 +17,20 @@
 #include "stm32f0xx_ll_rtc.h"
 #include "hex2num.h"
 
-#define BUTT_MODE_SWITCH_START 0
-#define BUTT_MODE_SWITCH_TRIGG 300
-#define BUTT_MODE_SWITCH_COMPLETE 301
+
+///for contact bounce protection
+#define BUTT_START 0
+#define BUTT_TRIGG 300
+#define BUTT_COMPLETE 301
 
 unsigned int numi = 1234;
 int8_t shc = 0;
 
-int modeSwitchButtonTime = BUTT_MODE_SWITCH_COMPLETE;
+
+///for contact bounce protection
+int modeSwitchButtonTime = BUTT_COMPLETE;
+///for contact bounce protection
+int highlightShiftButtonTime = BUTT_COMPLETE;
 
 
 static const unsigned int pow10[] = {1, 10, 100, 1000};
@@ -36,8 +42,12 @@ unsigned int stime = 0;
 
 unsigned int done = 0;
 
+unsigned int settings_shift = 0;
+unsigned int settings_mode = 0;
 
 
+
+void set_timer(unsigned int timode);
 
 void gpio_config() {
     gpio_ind7_config();
@@ -47,6 +57,10 @@ void gpio_config() {
 
     LL_GPIO_SetPinMode(GPIOA, LL_GPIO_PIN_1, LL_GPIO_MODE_INPUT);
     LL_GPIO_SetPinPull(GPIOA, LL_GPIO_PIN_1, LL_GPIO_PULL_DOWN);
+    LL_GPIO_SetPinMode(GPIOA, LL_GPIO_PIN_2, LL_GPIO_MODE_INPUT);
+    LL_GPIO_SetPinPull(GPIOA, LL_GPIO_PIN_2, LL_GPIO_PULL_UP);
+    LL_GPIO_SetPinMode(GPIOA, LL_GPIO_PIN_3, LL_GPIO_MODE_INPUT);
+    LL_GPIO_SetPinPull(GPIOA, LL_GPIO_PIN_3, LL_GPIO_PULL_UP);
 
 }
 
@@ -89,47 +103,69 @@ static void systick_config() {
 void SysTick_Handler() {
     static unsigned int ctime, time, t;
     static unsigned int timode = 0; //0 for work mode, 1 for break mode
-    if(LL_RTC_IsActiveFlag_RS(RTC)) {
+    if(LL_RTC_IsActiveFlag_RS(RTC) && !settings_mode) {
         ctime = hex2num(__LL_RTC_GET_SECOND(LL_RTC_TIME_Get(RTC))) +
                hex2num(__LL_RTC_GET_MINUTE(LL_RTC_TIME_Get(RTC))) * 60;
         time = done ? ctime - stime : stime - ctime;
         numi = (time / 60 ) * 100 + (time % 60);
     }
 
+    //for contact bounce protection
+    //Mode switch button
     switch (modeSwitchButtonTime) {
         default:
             modeSwitchButtonTime++;
             break;
-        case BUTT_MODE_SWITCH_TRIGG:
+        case BUTT_TRIGG:
             modeSwitchButtonTime++;
             if(done || timode) {
                 done = 0;
 
                 timode ^= 1;
-                stime = hex2num(__LL_RTC_GET_SECOND(LL_RTC_TIME_Get(RTC))) + hex2num(__LL_RTC_GET_MINUTE(LL_RTC_TIME_Get(RTC))) * 60 + (timode ? breaktime : worktime);
 
                 LL_GPIO_TogglePin(GPIOC, LL_GPIO_PIN_8);
 
-                LL_RTC_DisableWriteProtection(RTC);
-                LL_RTC_ALMA_Disable(RTC);
-                while(!LL_RTC_IsActiveFlag_ALRAW(RTC));
-                t = hex2num(__LL_RTC_GET_SECOND(LL_RTC_TIME_Get(RTC))) +
-                    hex2num(__LL_RTC_GET_MINUTE(LL_RTC_TIME_Get(RTC))) * 60 +
-                    hex2num(__LL_RTC_GET_HOUR(LL_RTC_TIME_Get(RTC))) * 3600 + (timode ? breaktime : worktime);
-                LL_RTC_ALMA_ConfigTime(RTC, LL_RTC_ALMA_TIME_FORMAT_AM, num2hex(t / 3600), num2hex((t % 3600) / 60), num2hex(t % 60));
-                LL_RTC_ALMA_Enable(RTC);
-                LL_RTC_EnableWriteProtection(RTC);
+                set_timer(timode);
             }
             break;
-        case BUTT_MODE_SWITCH_COMPLETE:
+        case BUTT_COMPLETE:
+            break;
+    }
+
+    //Highlight shifter aka pause aka settings button
+    switch (highlightShiftButtonTime) {
+        default:
+            highlightShiftButtonTime++;
+            break;
+        case BUTT_TRIGG:
+            timode = 0;
+            highlightShiftButtonTime++;
+            settings_shift = (settings_shift - 1) % 4;
+            break;
+        case BUTT_COMPLETE:
             break;
     }
 
 	if((++shc) == 4)
 		shc = 0;
-	set_indicator((numi / pow10[shc]) % 10, shc, shc == 2);
+	//TODO pwm
+	if(!settings_mode || shc == settings_shift)
+    	set_indicator((numi / pow10[shc]) % 10, shc, shc == 2);
 }
 
+
+void set_timer(unsigned int timode) {
+    LL_RTC_DisableWriteProtection(RTC);
+    LL_RTC_ALMA_Disable(RTC);
+    while(!LL_RTC_IsActiveFlag_ALRAW(RTC));
+    int t = hex2num(__LL_RTC_GET_SECOND(LL_RTC_TIME_Get(RTC))) +
+            hex2num(__LL_RTC_GET_MINUTE(LL_RTC_TIME_Get(RTC))) * 60 +
+            hex2num(__LL_RTC_GET_HOUR(LL_RTC_TIME_Get(RTC))) * 3600 + (timode ? breaktime : worktime);
+    LL_RTC_ALMA_ConfigTime(RTC, LL_RTC_ALMA_TIME_FORMAT_AM, num2hex(t / 3600), num2hex((t % 3600) / 60), num2hex(t % 60));
+    LL_RTC_ALMA_Enable(RTC);
+    LL_RTC_EnableWriteProtection(RTC);
+    stime = hex2num(__LL_RTC_GET_SECOND(LL_RTC_TIME_Get(RTC))) + hex2num(__LL_RTC_GET_MINUTE(LL_RTC_TIME_Get(RTC))) * 60 + (timode ? breaktime : worktime);
+}
 
 
 static void rtc_config(void)
@@ -194,12 +230,64 @@ void exti_config() {
     LL_EXTI_EnableRisingTrig_0_31(LL_EXTI_LINE_1);
     NVIC_EnableIRQ(EXTI0_1_IRQn);
     NVIC_SetPriority(EXTI0_1_IRQn, 1);
+
+    LL_SYSCFG_SetEXTISource(LL_SYSCFG_EXTI_PORTA, LL_SYSCFG_EXTI_LINE2);
+    LL_SYSCFG_SetEXTISource(LL_SYSCFG_EXTI_PORTA, LL_SYSCFG_EXTI_LINE3);
+
+    LL_EXTI_EnableIT_0_31(LL_EXTI_LINE_3);
+    LL_EXTI_EnableIT_0_31(LL_EXTI_LINE_2);
+
+    LL_EXTI_EnableFallingTrig_0_31(LL_EXTI_LINE_2);
+    LL_EXTI_EnableFallingTrig_0_31(LL_EXTI_LINE_3);
+    LL_EXTI_EnableRisingTrig_0_31(LL_EXTI_LINE_2);
+    LL_EXTI_EnableRisingTrig_0_31(LL_EXTI_LINE_3);
+
+
+
+    NVIC_EnableIRQ(EXTI2_3_IRQn);
+    NVIC_SetPriority(EXTI2_3_IRQn, 5);
 }
 
 void EXTI0_1_IRQHandler() {
-    modeSwitchButtonTime = BUTT_MODE_SWITCH_START;
+    modeSwitchButtonTime = BUTT_START;
 
     LL_EXTI_ClearFlag_0_31(LL_EXTI_LINE_1);
+}
+
+///Contact bounce protection
+#define ROTATION_LIMIT 4
+
+void EXTI2_3_IRQHandler() {
+    if(settings_mode) {
+        static const int8_t states[16] = {0, -1, 1, 0, 1, 0, 0, -1, -1, 0, 0, 1, 0, 1, -1, 0};
+        uint8_t common = LL_GPIO_ReadInputPort(GPIOA) >> 2 & 0x3;
+        static uint8_t previous = 0;
+        static int8_t summary = 0;
+        int8_t res = 0;
+
+        previous = ((previous << 2) | common) & 0xF;
+
+        summary += states[previous];
+
+        //Contact bounce protection
+        if (summary == ROTATION_LIMIT) {
+            res = 1;
+            summary = 0;
+        }
+        if (summary == -ROTATION_LIMIT) {
+            res = -1;
+            summary = 0;
+        }
+
+        int cdigit = (int)(numi / pow10[settings_shift]) % 10;
+        numi -= (unsigned int)cdigit * pow10[settings_shift];
+        cdigit = (cdigit + res) % 10;
+        numi += (unsigned int)cdigit * pow10[settings_shift];
+
+    }
+
+    LL_EXTI_ClearFlag_0_31(LL_EXTI_LINE_2);
+    LL_EXTI_ClearFlag_0_31(LL_EXTI_LINE_3);
 }
 
 void RTC_IRQHandler() {
@@ -216,6 +304,105 @@ void RTC_IRQHandler() {
     LL_EXTI_ClearFlag_0_31(LL_EXTI_LINE_17);
 }
 
+static void timers_config(void)
+{
+    LL_APB1_GRP2_EnableClock(LL_APB1_GRP2_PERIPH_TIM16);
+    LL_GPIO_SetPinMode(GPIOB, LL_GPIO_PIN_8, LL_GPIO_MODE_ALTERNATE);
+    LL_GPIO_SetAFPin_8_15(GPIOB, LL_GPIO_PIN_8, LL_GPIO_AF_2);
+    LL_GPIO_SetPinPull(GPIOB, LL_GPIO_PIN_8, LL_GPIO_PULL_UP);
+
+    LL_APB1_GRP2_EnableClock(LL_APB1_GRP2_PERIPH_TIM16);
+    LL_TIM_SetPrescaler(TIM16, 47999);
+    LL_TIM_IC_SetFilter(TIM16, LL_TIM_CHANNEL_CH1, LL_TIM_IC_FILTER_FDIV16_N5);
+    LL_TIM_IC_SetPolarity(TIM16, LL_TIM_CHANNEL_CH1,
+                          LL_TIM_IC_POLARITY_FALLING);
+    LL_TIM_IC_SetActiveInput(TIM16, LL_TIM_CHANNEL_CH1,
+                             LL_TIM_ACTIVEINPUT_DIRECTTI);
+    LL_TIM_IC_SetPrescaler(TIM16, LL_TIM_CHANNEL_CH1, LL_TIM_ICPSC_DIV1);
+    LL_TIM_CC_EnableChannel(TIM16, LL_TIM_CHANNEL_CH1);
+    LL_TIM_EnableIT_CC1(TIM16);
+    LL_TIM_EnableCounter(TIM16);
+
+    LL_TIM_GenerateEvent_UPDATE(TIM2);
+    LL_TIM_GenerateEvent_UPDATE(TIM16);
+
+    NVIC_EnableIRQ(TIM16_IRQn);
+    NVIC_SetPriority(TIM16_IRQn, 0);
+
+
+    /*TODO
+    LL_APB1_GRP1_EnableClock(LL_APB1_GRP1_PERIPH_TIM3);
+    LL_TIM_SetPrescaler(TIM3, 47999);
+    LL_TIM_SetAutoReload(TIM3, 999);
+    LL_TIM_SetCounterMode(TIM3, LL_TIM_COUNTERMODE_UP);
+    LL_TIM_EnableIT_UPDATE(TIM3);
+    LL_TIM_EnableCounter(TIM3);
+
+    NVIC_EnableIRQ(TIM3_IRQn);
+    NVIC_SetPriority(TIM3_IRQn, 1);
+
+    LL_APB1_GRP1_EnableClock(LL_APB1_GRP1_PERIPH_TIM14);
+    LL_TIM_SetPrescaler(TIM14, 47999);
+    LL_TIM_SetCounterMode(TIM14, LL_TIM_COUNTERMODE_UP);
+    LL_TIM_EnableIT_UPDATE(TIM14);
+    LL_TIM_EnableCounter(TIM14);
+
+    NVIC_EnableIRQ(TIM14_IRQn);
+    NVIC_SetPriority(TIM14_IRQn, 2);*/
+}
+
+
+
+void TIM16_IRQHandler() {
+    static int tap = 0;
+    static int t0 = 0;
+    static int t = 10000;
+    static int dt = 10000;
+    if(tap == 0)
+        t0 = LL_TIM_IC_GetCaptureCH1(TIM16);
+    else {
+        t = LL_TIM_IC_GetCaptureCH1(TIM16);
+    }
+    dt = t - t0;
+    if (dt < 0)
+        dt *= -1;
+    tap = (tap + 1) % 2;
+
+
+    if (settings_mode)
+        highlightShiftButtonTime = BUTT_START;
+    else {
+        //TODO contact bounce protection
+        if (LL_RCC_IsEnabledRTC())
+            LL_RCC_DisableRTC();
+        else
+            LL_RCC_EnableRTC();
+    }
+
+    if(dt < 180) {
+        if (settings_mode) {
+            worktime = numi / 100 * 60 + numi % 100;
+            set_timer(0);
+            LL_RCC_EnableRTC();
+            settings_mode = 0;
+        } else {
+            settings_mode = 1;
+            LL_RCC_DisableRTC();
+
+            LL_GPIO_TogglePin(GPIOC, LL_GPIO_PIN_8);
+            settings_shift = 0;
+            numi = worktime / 60 * 100 + worktime % 60;
+        }
+    }
+
+
+
+    LL_TIM_ClearFlag_CC1(TIM16);
+}
+
+
+
+
 int main(void)
 {
 	rcc_config();
@@ -224,6 +411,7 @@ int main(void)
 	
 	systick_config();
 	rtc_config();
+	timers_config();
     stime = worktime;
 
     LL_GPIO_ResetOutputPin(GPIOC, LL_GPIO_PIN_8);
