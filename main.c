@@ -49,9 +49,11 @@ unsigned int done = 0;
 unsigned int settings_shift = 0;
 unsigned int settings_mode = 0;
 
+unsigned int timode = 0; //0 for work mode, 1 for break mode
 
 
-void set_timer(unsigned int timode);
+
+void set_timer();
 
 void gpio_config() {
     gpio_ind7_config();
@@ -114,7 +116,6 @@ static void systick_config() {
 #pragma ide diagnostic ignored "OCUnusedGlobalDeclarationInspection"
 void SysTick_Handler() {
     static unsigned int ctime, time;
-    static unsigned int timode = 0; //0 for work mode, 1 for break mode
     static unsigned int highlight_pwm_time = 0;
     if(LL_RTC_IsActiveFlag_RS(RTC) && !settings_mode) {
         ctime = hex2num(__LL_RTC_GET_SECOND(LL_RTC_TIME_Get(RTC))) +
@@ -134,17 +135,18 @@ void SysTick_Handler() {
             if(done || timode) {
                 done = 0;
 
-                timode ^= 1;
 
-                if(timode) {
-                    LL_GPIO_SetOutputPin(GPIOC, LL_GPIO_PIN_15);
-                    LL_GPIO_ResetOutputPin(GPIOC, LL_GPIO_PIN_13);
-                } else {
+                if (timode) {
                     LL_GPIO_SetOutputPin(GPIOC, LL_GPIO_PIN_13);
                     LL_GPIO_ResetOutputPin(GPIOC, LL_GPIO_PIN_15);
+                    LL_TIM_DisableCounter(TIM3);
+                } else {
+                    LL_GPIO_SetOutputPin(GPIOC, LL_GPIO_PIN_15);
+                    LL_GPIO_ResetOutputPin(GPIOC, LL_GPIO_PIN_13);
                 }
+                timode ^= 1;
 
-                set_timer(timode);
+                set_timer();
 
                 LL_GPIO_ResetOutputPin(GPIOC, LL_GPIO_PIN_14);
             }
@@ -181,15 +183,12 @@ void SysTick_Handler() {
 	}
 
 
-	if(timode && done && !LL_TIM_IsEnabledCounter(TIM3))
-	    LL_TIM_EnableCounter(TIM3);
-	if(!timode && !done && LL_TIM_IsEnabledCounter(TIM3))
-	    LL_TIM_DisableCounter(TIM3);
+
 }
 #pragma clang diagnostic pop
 
 
-void set_timer(unsigned int timode) {
+void set_timer() {
     LL_RTC_DisableWriteProtection(RTC);
     LL_RTC_ALMA_Disable(RTC);
     while(!LL_RTC_IsActiveFlag_ALRAW(RTC));
@@ -341,7 +340,10 @@ void RTC_IRQHandler() {
 
     LL_GPIO_SetOutputPin(GPIOC, LL_GPIO_PIN_14);
 
-
+    if(timode)
+        LL_TIM_EnableCounter(TIM3);
+    else
+        LL_TIM_EnableCounter(TIM14);
 
     LL_RTC_ClearFlag_ALRA(RTC);
     LL_EXTI_ClearFlag_0_31(LL_EXTI_LINE_17);
@@ -385,9 +387,9 @@ static void timers_config(void)
 
     LL_APB1_GRP1_EnableClock(LL_APB1_GRP1_PERIPH_TIM14);
     LL_TIM_SetPrescaler(TIM14, 47999);
+    LL_TIM_SetAutoReload(TIM14, 499);
     LL_TIM_SetCounterMode(TIM14, LL_TIM_COUNTERMODE_UP);
     LL_TIM_EnableIT_UPDATE(TIM14);
-    LL_TIM_EnableCounter(TIM14);
 
     NVIC_EnableIRQ(TIM14_IRQn);
     NVIC_SetPriority(TIM14_IRQn, 2);
@@ -404,6 +406,18 @@ void TIM3_IRQHandler() {
 #pragma clang diagnostic push
 #pragma ide diagnostic ignored "OCUnusedGlobalDeclarationInspection"
 void TIM14_IRQHandler() {
+    static unsigned int cycles = 0;
+    if(cycles == 4)
+        cycles = 0;
+
+    if(LL_TIM_IsEnabledCounter(TIM3))
+        LL_TIM_DisableCounter(TIM3);
+    else
+        LL_TIM_EnableCounter(TIM3);
+
+    cycles++;
+    if(cycles == 4)
+        LL_TIM_DisableCounter(TIM14);
 
     LL_TIM_ClearFlag_UPDATE(TIM14);
 }
@@ -448,7 +462,7 @@ void TIM16_IRQHandler() {
             LL_GPIO_SetOutputPin(GPIOC, LL_GPIO_PIN_15);
         } else if (settings_mode == 2) {
             breaktime = numi / 100 * 60 + numi % 100;
-            set_timer(0);
+            set_timer();
             done = 0;
             LL_RCC_EnableRTC();
             settings_mode = 0;
