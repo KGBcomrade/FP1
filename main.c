@@ -391,7 +391,7 @@ void TIM16_IRQHandler() {
             LL_RCC_EnableRTC();
     }
 
-    if(dt < 180) {
+    if(dt < 180 && dt > 100) {
         if (settings_mode) {
             worktime = numi / 100 * 60 + numi % 100;
             set_timer(0);
