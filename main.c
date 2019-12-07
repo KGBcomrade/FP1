@@ -170,7 +170,7 @@ void set_timer(unsigned int timode) {
     LL_RTC_DisableWriteProtection(RTC);
     LL_RTC_ALMA_Disable(RTC);
     while(!LL_RTC_IsActiveFlag_ALRAW(RTC));
-    int t = hex2num(__LL_RTC_GET_SECOND(LL_RTC_TIME_Get(RTC))) +
+    unsigned int t = hex2num(__LL_RTC_GET_SECOND(LL_RTC_TIME_Get(RTC))) +
             hex2num(__LL_RTC_GET_MINUTE(LL_RTC_TIME_Get(RTC))) * 60 +
             hex2num(__LL_RTC_GET_HOUR(LL_RTC_TIME_Get(RTC))) * 3600 + (timode ? breaktime : worktime);
     LL_RTC_ALMA_ConfigTime(RTC, LL_RTC_ALMA_TIME_FORMAT_AM, num2hex(t / 3600), num2hex((t % 3600) / 60), num2hex(t % 60));
@@ -269,6 +269,7 @@ void EXTI0_1_IRQHandler() {
 ///Contact bounce protection
 #define ROTATION_LIMIT 4
 
+///encoder for time settings
 void EXTI2_3_IRQHandler() {
     if(settings_mode) {
         static const int32_t states[16] = {0, -1, 1, 0, 1, 0, 0, -1, -1, 0, 0, 1, 0, 1, -1, 0};
@@ -307,7 +308,6 @@ void RTC_IRQHandler() {
     LL_GPIO_TogglePin(GPIOC, LL_GPIO_PIN_9);
 
 
-    //TODO change
 
     done = 1;
 
@@ -384,7 +384,7 @@ void TIM16_IRQHandler() {
     if (settings_mode)
         highlightShiftButtonTime = BUTT_START;
     else {
-        //TODO contact bounce protection
+        //notTODO contact bounce protection
         if (LL_RCC_IsEnabledRTC())
             LL_RCC_DisableRTC();
         else
@@ -392,8 +392,14 @@ void TIM16_IRQHandler() {
     }
 
     if(dt < 180 && dt > 100) {
-        if (settings_mode) {
+        if (settings_mode == 1) {
             worktime = numi / 100 * 60 + numi % 100;
+            numi = breaktime / 60 * 100 + breaktime % 60;
+            //not the best implementation, but who cares
+            settings_shift = 0;
+            settings_mode = 2;
+        } else if (settings_mode == 2) {
+            breaktime = numi / 100 * 60 + numi % 100;
             set_timer(0);
             done = 0;
             LL_RCC_EnableRTC();
@@ -403,7 +409,7 @@ void TIM16_IRQHandler() {
             LL_RCC_DisableRTC();
 
             LL_GPIO_TogglePin(GPIOC, LL_GPIO_PIN_8);
-            settings_shift = 0;
+            settings_shift = 3;
             numi = worktime / 60 * 100 + worktime % 60;
         }
     }
