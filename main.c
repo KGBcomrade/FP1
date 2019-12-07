@@ -104,8 +104,10 @@ static void systick_config() {
 	NVIC_SetPriority(SysTick_IRQn, 3);
 }
 
+#pragma clang diagnostic push
+#pragma ide diagnostic ignored "OCUnusedGlobalDeclarationInspection"
 void SysTick_Handler() {
-    static unsigned int ctime, time, t;
+    static unsigned int ctime, time;
     static unsigned int timode = 0; //0 for work mode, 1 for break mode
     static unsigned int highlight_pwm_time = 0;
     if(LL_RTC_IsActiveFlag_RS(RTC) && !settings_mode) {
@@ -161,9 +163,10 @@ void SysTick_Handler() {
 	    if(shc == 0)
 	        highlight_pwm_time = (highlight_pwm_time + 1) % SETTINGS_MODE_DIGITS_BRIGHTNESS_PRESCALER;
 	    if(highlight_pwm_time == SETTINGS_MODE_DIGITS_BRIGHTNESS_PRESCALER - 1)
-	        set_indicator((numi / pow10[shc]) % 10, shc, 0);
+	        set_indicator((numi / pow10[shc]) % 10, shc, shc == 2);
 	}
 }
+#pragma clang diagnostic pop
 
 
 void set_timer(unsigned int timode) {
@@ -260,15 +263,20 @@ void exti_config() {
     NVIC_SetPriority(EXTI2_3_IRQn, 5);
 }
 
+#pragma clang diagnostic push
+#pragma ide diagnostic ignored "OCUnusedGlobalDeclarationInspection"
 void EXTI0_1_IRQHandler() {
     modeSwitchButtonTime = BUTT_START;
 
     LL_EXTI_ClearFlag_0_31(LL_EXTI_LINE_1);
 }
+#pragma clang diagnostic pop
 
 ///Contact bounce protection
 #define ROTATION_LIMIT 4
 
+#pragma clang diagnostic push
+#pragma ide diagnostic ignored "OCUnusedGlobalDeclarationInspection"
 ///encoder for time settings
 void EXTI2_3_IRQHandler() {
     if(settings_mode) {
@@ -302,7 +310,10 @@ void EXTI2_3_IRQHandler() {
     LL_EXTI_ClearFlag_0_31(LL_EXTI_LINE_2);
     LL_EXTI_ClearFlag_0_31(LL_EXTI_LINE_3);
 }
+#pragma clang diagnostic pop
 
+#pragma clang diagnostic push
+#pragma ide diagnostic ignored "OCUnusedGlobalDeclarationInspection"
 void RTC_IRQHandler() {
 
     LL_GPIO_TogglePin(GPIOC, LL_GPIO_PIN_9);
@@ -315,6 +326,7 @@ void RTC_IRQHandler() {
     LL_RTC_ClearFlag_ALRA(RTC);
     LL_EXTI_ClearFlag_0_31(LL_EXTI_LINE_17);
 }
+#pragma clang diagnostic pop
 
 static void timers_config(void)
 {
@@ -365,6 +377,8 @@ static void timers_config(void)
 
 
 
+#pragma clang diagnostic push
+#pragma ide diagnostic ignored "OCUnusedGlobalDeclarationInspection"
 void TIM16_IRQHandler() {
     static int tap = 0;
     static int t0 = 0;
@@ -418,6 +432,7 @@ void TIM16_IRQHandler() {
 
     LL_TIM_ClearFlag_CC1(TIM16);
 }
+#pragma clang diagnostic pop
 
 
 
