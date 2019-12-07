@@ -58,6 +58,9 @@ void gpio_config() {
     LL_AHB1_GRP1_EnableClock(LL_AHB1_GRP1_PERIPH_GPIOC);
     LL_GPIO_SetPinMode(GPIOC, LL_GPIO_PIN_8, LL_GPIO_MODE_OUTPUT);
     LL_GPIO_SetPinMode(GPIOC, LL_GPIO_PIN_9, LL_GPIO_MODE_OUTPUT);
+    LL_GPIO_SetPinMode(GPIOC, LL_GPIO_PIN_13, LL_GPIO_MODE_OUTPUT);
+    LL_GPIO_SetPinMode(GPIOC, LL_GPIO_PIN_14, LL_GPIO_MODE_OUTPUT);
+    LL_GPIO_SetPinMode(GPIOC, LL_GPIO_PIN_15, LL_GPIO_MODE_OUTPUT);
 
     LL_GPIO_SetPinMode(GPIOA, LL_GPIO_PIN_1, LL_GPIO_MODE_INPUT);
     LL_GPIO_SetPinPull(GPIOA, LL_GPIO_PIN_1, LL_GPIO_PULL_DOWN);
@@ -130,9 +133,17 @@ void SysTick_Handler() {
 
                 timode ^= 1;
 
-                LL_GPIO_TogglePin(GPIOC, LL_GPIO_PIN_8);
+                if(timode) {
+                    LL_GPIO_SetOutputPin(GPIOC, LL_GPIO_PIN_15);
+                    LL_GPIO_ResetOutputPin(GPIOC, LL_GPIO_PIN_13);
+                } else {
+                    LL_GPIO_SetOutputPin(GPIOC, LL_GPIO_PIN_13);
+                    LL_GPIO_ResetOutputPin(GPIOC, LL_GPIO_PIN_15);
+                }
 
                 set_timer(timode);
+
+                LL_GPIO_ResetOutputPin(GPIOC, LL_GPIO_PIN_14);
             }
             break;
         case BUTT_COMPLETE:
@@ -316,12 +327,10 @@ void EXTI2_3_IRQHandler() {
 #pragma ide diagnostic ignored "OCUnusedGlobalDeclarationInspection"
 void RTC_IRQHandler() {
 
-    LL_GPIO_TogglePin(GPIOC, LL_GPIO_PIN_9);
-
-
 
     done = 1;
 
+    LL_GPIO_SetOutputPin(GPIOC, LL_GPIO_PIN_14);
 
     LL_RTC_ClearFlag_ALRA(RTC);
     LL_EXTI_ClearFlag_0_31(LL_EXTI_LINE_17);
@@ -412,19 +421,27 @@ void TIM16_IRQHandler() {
             //not the best implementation, but who cares
             settings_shift = 0;
             settings_mode = 2;
+            LL_GPIO_ResetOutputPin(GPIOC, LL_GPIO_PIN_13);
+            LL_GPIO_SetOutputPin(GPIOC, LL_GPIO_PIN_15);
         } else if (settings_mode == 2) {
             breaktime = numi / 100 * 60 + numi % 100;
             set_timer(0);
             done = 0;
             LL_RCC_EnableRTC();
             settings_mode = 0;
+
+            LL_GPIO_SetOutputPin(GPIOC, LL_GPIO_PIN_13);
+            LL_GPIO_ResetOutputPin(GPIOC, LL_GPIO_PIN_15);
+            LL_GPIO_ResetOutputPin(GPIOC, LL_GPIO_PIN_8);
         } else {
             settings_mode = 1;
             LL_RCC_DisableRTC();
-
-            LL_GPIO_TogglePin(GPIOC, LL_GPIO_PIN_8);
             settings_shift = 3;
             numi = worktime / 60 * 100 + worktime % 60;
+
+            LL_GPIO_SetOutputPin(GPIOC, LL_GPIO_PIN_13);
+            LL_GPIO_ResetOutputPin(GPIOC, LL_GPIO_PIN_15);
+            LL_GPIO_SetOutputPin(GPIOC, LL_GPIO_PIN_8);
         }
     }
 
@@ -448,7 +465,7 @@ int main(void)
 	timers_config();
     stime = worktime;
 
-    LL_GPIO_ResetOutputPin(GPIOC, LL_GPIO_PIN_8);
+    LL_GPIO_SetOutputPin(GPIOC, LL_GPIO_PIN_13);
 
 	while(1);
 
