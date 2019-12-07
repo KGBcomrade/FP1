@@ -23,6 +23,9 @@
 #define BUTT_TRIGG 300
 #define BUTT_COMPLETE 301
 
+///to make not highlighted digits in settings mode dimmer
+#define SETTINGS_MODE_DIGITS_BRIGHTNESS_PRESCALER 4
+
 unsigned int numi = 1234;
 int8_t shc = 0;
 
@@ -31,6 +34,7 @@ int8_t shc = 0;
 int modeSwitchButtonTime = BUTT_COMPLETE;
 ///for contact bounce protection
 int highlightShiftButtonTime = BUTT_COMPLETE;
+
 
 
 static const unsigned int pow10[] = {1, 10, 100, 1000};
@@ -103,6 +107,7 @@ static void systick_config() {
 void SysTick_Handler() {
     static unsigned int ctime, time, t;
     static unsigned int timode = 0; //0 for work mode, 1 for break mode
+    static unsigned int highlight_pwm_time = 0;
     if(LL_RTC_IsActiveFlag_RS(RTC) && !settings_mode) {
         ctime = hex2num(__LL_RTC_GET_SECOND(LL_RTC_TIME_Get(RTC))) +
                hex2num(__LL_RTC_GET_MINUTE(LL_RTC_TIME_Get(RTC))) * 60;
@@ -133,6 +138,7 @@ void SysTick_Handler() {
     }
 
     //Highlight shifter aka pause aka settings button
+    //Highlight shifter function:
     switch (highlightShiftButtonTime) {
         default:
             highlightShiftButtonTime++;
@@ -146,11 +152,17 @@ void SysTick_Handler() {
             break;
     }
 
+
 	if((++shc) == 4)
 		shc = 0;
-	//TODO pwm
 	if(!settings_mode || shc == settings_shift)
-    	set_indicator((numi / pow10[shc]) % 10, shc, shc == 2);
+    	set_indicator((numi / pow10[shc]) % 10, shc, shc == 2 && !settings_mode);
+	if (settings_mode){
+	    if(shc == 0)
+	        highlight_pwm_time = (highlight_pwm_time + 1) % SETTINGS_MODE_DIGITS_BRIGHTNESS_PRESCALER;
+	    if(highlight_pwm_time == SETTINGS_MODE_DIGITS_BRIGHTNESS_PRESCALER - 1)
+	        set_indicator((numi / pow10[shc]) % 10, shc, 0);
+	}
 }
 
 
@@ -259,11 +271,11 @@ void EXTI0_1_IRQHandler() {
 
 void EXTI2_3_IRQHandler() {
     if(settings_mode) {
-        static const int8_t states[16] = {0, -1, 1, 0, 1, 0, 0, -1, -1, 0, 0, 1, 0, 1, -1, 0};
-        uint8_t common = LL_GPIO_ReadInputPort(GPIOA) >> 2 & 0x3;
-        static uint8_t previous = 0;
-        static int8_t summary = 0;
-        int8_t res = 0;
+        static const int32_t states[16] = {0, -1, 1, 0, 1, 0, 0, -1, -1, 0, 0, 1, 0, 1, -1, 0};
+        uint32_t common = LL_GPIO_ReadInputPort(GPIOA) >> 2 & 0x3;
+        static uint32_t previous = 0;
+        static int32_t summary = 0;
+        int32_t res = 0;
 
         previous = ((previous << 2) | common) & 0xF;
 

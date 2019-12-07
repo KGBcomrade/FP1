@@ -8,89 +8,89 @@
 		<Option virtualFolders="CMake Files\;"/>
 		<Build>
 			<Target title="all">
-				<Option working_dir="/home/kgbcomrade/FP1/cmake-build-debug"/>
+				<Option working_dir="/home/kgbcomrade/prg/FP/cmake-build-debug"/>
 				<Option type="4"/>
 				<MakeCommands>
-					<Build command="/usr/bin/make -j8 -f &quot;/home/kgbcomrade/FP1/cmake-build-debug/Makefile&quot;  VERBOSE=1 all"/>
-					<CompileFile command="/usr/bin/make -j8 -f &quot;/home/kgbcomrade/FP1/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
-					<Clean command="/usr/bin/make -j8 -f &quot;/home/kgbcomrade/FP1/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
-					<DistClean command="/usr/bin/make -j8 -f &quot;/home/kgbcomrade/FP1/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<Build command="/usr/bin/make -j4 -f &quot;/home/kgbcomrade/prg/FP/cmake-build-debug/Makefile&quot;  VERBOSE=1 all"/>
+					<CompileFile command="/usr/bin/make -j4 -f &quot;/home/kgbcomrade/prg/FP/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j4 -f &quot;/home/kgbcomrade/prg/FP/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j4 -f &quot;/home/kgbcomrade/prg/FP/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
 				</MakeCommands>
 			</Target>
 			<Target title="rebuild_cache">
-				<Option working_dir="/home/kgbcomrade/FP1/cmake-build-debug"/>
+				<Option working_dir="/home/kgbcomrade/prg/FP/cmake-build-debug"/>
 				<Option type="4"/>
 				<MakeCommands>
-					<Build command="/usr/bin/make -j8 -f &quot;/home/kgbcomrade/FP1/cmake-build-debug/Makefile&quot;  VERBOSE=1 rebuild_cache"/>
-					<CompileFile command="/usr/bin/make -j8 -f &quot;/home/kgbcomrade/FP1/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
-					<Clean command="/usr/bin/make -j8 -f &quot;/home/kgbcomrade/FP1/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
-					<DistClean command="/usr/bin/make -j8 -f &quot;/home/kgbcomrade/FP1/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<Build command="/usr/bin/make -j4 -f &quot;/home/kgbcomrade/prg/FP/cmake-build-debug/Makefile&quot;  VERBOSE=1 rebuild_cache"/>
+					<CompileFile command="/usr/bin/make -j4 -f &quot;/home/kgbcomrade/prg/FP/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j4 -f &quot;/home/kgbcomrade/prg/FP/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j4 -f &quot;/home/kgbcomrade/prg/FP/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
 				</MakeCommands>
 			</Target>
 			<Target title="FP">
-				<Option output="/home/kgbcomrade/FP1/cmake-build-debug/FP" prefix_auto="0" extension_auto="0"/>
-				<Option working_dir="/home/kgbcomrade/FP1/cmake-build-debug"/>
+				<Option output="/home/kgbcomrade/prg/FP/cmake-build-debug/FP" prefix_auto="0" extension_auto="0"/>
+				<Option working_dir="/home/kgbcomrade/prg/FP/cmake-build-debug"/>
 				<Option object_output="./"/>
 				<Option type="1"/>
 				<Option compiler="gcc"/>
 				<Compiler>
-					<Add directory="/home/kgbcomrade/FP1/plib"/>
-					<Add directory="/home/kgbcomrade/FP1/lib"/>
-					<Add directory="/home/kgbcomrade/FP1/core"/>
-					<Add directory="/usr/lib/gcc/x86_64-linux-gnu/8/include"/>
+					<Add directory="/home/kgbcomrade/prg/FP/plib"/>
+					<Add directory="/home/kgbcomrade/prg/FP/lib"/>
+					<Add directory="/home/kgbcomrade/prg/FP/core"/>
+					<Add directory="/usr/lib/gcc/x86_64-linux-gnu/7/include"/>
 					<Add directory="/usr/local/include"/>
-					<Add directory="/usr/lib/gcc/x86_64-linux-gnu/8/include-fixed"/>
+					<Add directory="/usr/lib/gcc/x86_64-linux-gnu/7/include-fixed"/>
 					<Add directory="/usr/include/x86_64-linux-gnu"/>
 					<Add directory="/usr/include"/>
 				</Compiler>
 				<MakeCommands>
-					<Build command="/usr/bin/make -j8 -f &quot;/home/kgbcomrade/FP1/cmake-build-debug/Makefile&quot;  VERBOSE=1 FP"/>
-					<CompileFile command="/usr/bin/make -j8 -f &quot;/home/kgbcomrade/FP1/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
-					<Clean command="/usr/bin/make -j8 -f &quot;/home/kgbcomrade/FP1/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
-					<DistClean command="/usr/bin/make -j8 -f &quot;/home/kgbcomrade/FP1/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<Build command="/usr/bin/make -j4 -f &quot;/home/kgbcomrade/prg/FP/cmake-build-debug/Makefile&quot;  VERBOSE=1 FP"/>
+					<CompileFile command="/usr/bin/make -j4 -f &quot;/home/kgbcomrade/prg/FP/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j4 -f &quot;/home/kgbcomrade/prg/FP/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j4 -f &quot;/home/kgbcomrade/prg/FP/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
 				</MakeCommands>
 			</Target>
 			<Target title="FP/fast">
-				<Option output="/home/kgbcomrade/FP1/cmake-build-debug/FP" prefix_auto="0" extension_auto="0"/>
-				<Option working_dir="/home/kgbcomrade/FP1/cmake-build-debug"/>
+				<Option output="/home/kgbcomrade/prg/FP/cmake-build-debug/FP" prefix_auto="0" extension_auto="0"/>
+				<Option working_dir="/home/kgbcomrade/prg/FP/cmake-build-debug"/>
 				<Option object_output="./"/>
 				<Option type="1"/>
 				<Option compiler="gcc"/>
 				<Compiler>
-					<Add directory="/home/kgbcomrade/FP1/plib"/>
-					<Add directory="/home/kgbcomrade/FP1/lib"/>
-					<Add directory="/home/kgbcomrade/FP1/core"/>
-					<Add directory="/usr/lib/gcc/x86_64-linux-gnu/8/include"/>
+					<Add directory="/home/kgbcomrade/prg/FP/plib"/>
+					<Add directory="/home/kgbcomrade/prg/FP/lib"/>
+					<Add directory="/home/kgbcomrade/prg/FP/core"/>
+					<Add directory="/usr/lib/gcc/x86_64-linux-gnu/7/include"/>
 					<Add directory="/usr/local/include"/>
-					<Add directory="/usr/lib/gcc/x86_64-linux-gnu/8/include-fixed"/>
+					<Add directory="/usr/lib/gcc/x86_64-linux-gnu/7/include-fixed"/>
 					<Add directory="/usr/include/x86_64-linux-gnu"/>
 					<Add directory="/usr/include"/>
 				</Compiler>
 				<MakeCommands>
-					<Build command="/usr/bin/make -j8 -f &quot;/home/kgbcomrade/FP1/cmake-build-debug/Makefile&quot;  VERBOSE=1 FP/fast"/>
-					<CompileFile command="/usr/bin/make -j8 -f &quot;/home/kgbcomrade/FP1/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
-					<Clean command="/usr/bin/make -j8 -f &quot;/home/kgbcomrade/FP1/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
-					<DistClean command="/usr/bin/make -j8 -f &quot;/home/kgbcomrade/FP1/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<Build command="/usr/bin/make -j4 -f &quot;/home/kgbcomrade/prg/FP/cmake-build-debug/Makefile&quot;  VERBOSE=1 FP/fast"/>
+					<CompileFile command="/usr/bin/make -j4 -f &quot;/home/kgbcomrade/prg/FP/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j4 -f &quot;/home/kgbcomrade/prg/FP/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j4 -f &quot;/home/kgbcomrade/prg/FP/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
 				</MakeCommands>
 			</Target>
 			<Target title="edit_cache">
-				<Option working_dir="/home/kgbcomrade/FP1/cmake-build-debug"/>
+				<Option working_dir="/home/kgbcomrade/prg/FP/cmake-build-debug"/>
 				<Option type="4"/>
 				<MakeCommands>
-					<Build command="/usr/bin/make -j8 -f &quot;/home/kgbcomrade/FP1/cmake-build-debug/Makefile&quot;  VERBOSE=1 edit_cache"/>
-					<CompileFile command="/usr/bin/make -j8 -f &quot;/home/kgbcomrade/FP1/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
-					<Clean command="/usr/bin/make -j8 -f &quot;/home/kgbcomrade/FP1/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
-					<DistClean command="/usr/bin/make -j8 -f &quot;/home/kgbcomrade/FP1/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<Build command="/usr/bin/make -j4 -f &quot;/home/kgbcomrade/prg/FP/cmake-build-debug/Makefile&quot;  VERBOSE=1 edit_cache"/>
+					<CompileFile command="/usr/bin/make -j4 -f &quot;/home/kgbcomrade/prg/FP/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j4 -f &quot;/home/kgbcomrade/prg/FP/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j4 -f &quot;/home/kgbcomrade/prg/FP/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
 				</MakeCommands>
 			</Target>
 		</Build>
-		<Unit filename="/home/kgbcomrade/FP1/lib/hex2num.h">
+		<Unit filename="/home/kgbcomrade/prg/FP/lib/hex2num.h">
 			<Option target="FP"/>
 		</Unit>
-		<Unit filename="/home/kgbcomrade/FP1/main.c">
+		<Unit filename="/home/kgbcomrade/prg/FP/main.c">
 			<Option target="FP"/>
 		</Unit>
-		<Unit filename="/home/kgbcomrade/FP1/CMakeLists.txt">
+		<Unit filename="/home/kgbcomrade/prg/FP/CMakeLists.txt">
 			<Option virtualFolder="CMake Files\"/>
 		</Unit>
 	</Project>
