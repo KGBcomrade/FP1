@@ -322,6 +322,8 @@ void EXTI2_3_IRQHandler() {
         int cdigit = (int)(numi / pow10[settings_shift]) % 10;
         numi -= (unsigned int)cdigit * pow10[settings_shift];
         cdigit = (cdigit + res) % 10;
+        if(cdigit < 0)
+            cdigit = 9;
         numi += (unsigned int)cdigit * pow10[settings_shift];
 
     }
