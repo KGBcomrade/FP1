@@ -69,6 +69,9 @@ void gpio_config() {
     LL_GPIO_SetPinMode(GPIOA, LL_GPIO_PIN_3, LL_GPIO_MODE_INPUT);
     LL_GPIO_SetPinPull(GPIOA, LL_GPIO_PIN_3, LL_GPIO_PULL_UP);
 
+    LL_AHB1_GRP1_EnableClock(LL_AHB1_GRP1_PERIPH_GPIOF);
+    LL_GPIO_SetPinMode(GPIOF, LL_GPIO_PIN_1, LL_GPIO_MODE_OUTPUT);
+
 }
 
 static void rcc_config() {
@@ -176,6 +179,12 @@ void SysTick_Handler() {
 	    if(highlight_pwm_time == SETTINGS_MODE_DIGITS_BRIGHTNESS_PRESCALER - 1)
 	        set_indicator((numi / pow10[shc]) % 10, shc, shc == 2);
 	}
+
+
+	if(timode && done && !LL_TIM_IsEnabledCounter(TIM3))
+	    LL_TIM_EnableCounter(TIM3);
+	if(!timode && !done && LL_TIM_IsEnabledCounter(TIM3))
+	    LL_TIM_DisableCounter(TIM3);
 }
 #pragma clang diagnostic pop
 
@@ -332,6 +341,8 @@ void RTC_IRQHandler() {
 
     LL_GPIO_SetOutputPin(GPIOC, LL_GPIO_PIN_14);
 
+
+
     LL_RTC_ClearFlag_ALRA(RTC);
     LL_EXTI_ClearFlag_0_31(LL_EXTI_LINE_17);
 }
@@ -363,13 +374,11 @@ static void timers_config(void)
     NVIC_SetPriority(TIM16_IRQn, 0);
 
 
-    /*TODO
     LL_APB1_GRP1_EnableClock(LL_APB1_GRP1_PERIPH_TIM3);
-    LL_TIM_SetPrescaler(TIM3, 47999);
-    LL_TIM_SetAutoReload(TIM3, 999);
+    LL_TIM_SetPrescaler(TIM3, 479);
+    LL_TIM_SetAutoReload(TIM3, 140);
     LL_TIM_SetCounterMode(TIM3, LL_TIM_COUNTERMODE_UP);
     LL_TIM_EnableIT_UPDATE(TIM3);
-    LL_TIM_EnableCounter(TIM3);
 
     NVIC_EnableIRQ(TIM3_IRQn);
     NVIC_SetPriority(TIM3_IRQn, 1);
@@ -381,10 +390,24 @@ static void timers_config(void)
     LL_TIM_EnableCounter(TIM14);
 
     NVIC_EnableIRQ(TIM14_IRQn);
-    NVIC_SetPriority(TIM14_IRQn, 2);*/
+    NVIC_SetPriority(TIM14_IRQn, 2);
 }
 
+#pragma clang diagnostic push
+#pragma ide diagnostic ignored "OCUnusedGlobalDeclarationInspection"
+void TIM3_IRQHandler() {
+    LL_GPIO_TogglePin(GPIOF, LL_GPIO_PIN_1);
+    LL_TIM_ClearFlag_UPDATE(TIM3);
+}
+#pragma clang diagnostic pop
 
+#pragma clang diagnostic push
+#pragma ide diagnostic ignored "OCUnusedGlobalDeclarationInspection"
+void TIM14_IRQHandler() {
+
+    LL_TIM_ClearFlag_UPDATE(TIM14);
+}
+#pragma clang diagnostic pop
 
 #pragma clang diagnostic push
 #pragma ide diagnostic ignored "OCUnusedGlobalDeclarationInspection"
